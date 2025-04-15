@@ -1,0 +1,127 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  APPROVER
+  USER
+}
+
+enum BookingStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum EquipmentType {
+  PROJECTOR
+  SPEAKER
+  CAMERA
+  HEADPHONE
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  userId    String   @unique
+  email     String   @unique
+  password  String
+  role      Role
+  meetings  Meeting[] @relation("UserMeetings")
+  approvals MeetingApproval[]
+  histories History[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MeetingRoom {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  meetings  Meeting[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Department {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  meetings  Meeting[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Equipment {
+  id                Int                @id @default(autoincrement())
+  name              String             @unique
+  type              EquipmentType
+  meetingEquipments MeetingEquipment[]
+  histories         History[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+}
+
+model Meeting {
+  id            Int                 @id @default(autoincrement())
+  agenda        String
+  gtimName      String
+  visitorName   String
+  companyName   String
+  startDate     DateTime
+  endDate       DateTime
+  allDay        Boolean             @default(false)
+  startTime     String
+  endTime       String
+  request       String?
+  status        BookingStatus       @default(PENDING)
+  userId        Int
+  user          User                @relation("UserMeetings", fields: [userId], references: [id])
+  meetingRoomId Int
+  meetingRoom   MeetingRoom         @relation(fields: [meetingRoomId], references: [id])
+  departmentId  Int
+  department    Department          @relation(fields: [departmentId], references: [id])
+  approvals     MeetingApproval[]
+  histories     History[]
+  meetingEquipments MeetingEquipment[]
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  isDeleted     Boolean             @default(false) // Field yang baru ditambahkan
+}
+
+model MeetingApproval {
+  id         Int           @id @default(autoincrement())
+  meetingId  Int
+  meeting    Meeting       @relation(fields: [meetingId], references: [id])
+  approverId Int
+  approver   User          @relation(fields: [approverId], references: [id])
+  status     BookingStatus @default(PENDING)
+  createdAt  DateTime      @default(now())
+
+  @@unique([meetingId, approverId]) // Unique agar satu approver hanya bisa approve 1x
+}
+
+model History {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id])
+  meetingId   Int
+  meeting     Meeting   @relation(fields: [meetingId], references: [id])
+  equipmentId Int?
+  equipment   Equipment? @relation(fields: [equipmentId], references: [id])
+  createdAt   DateTime  @default(now())
+}
+
+model MeetingEquipment {
+  meetingId   Int
+  meeting     Meeting   @relation(fields: [meetingId], references: [id])
+  equipmentId Int
+  equipment   Equipment @relation(fields: [equipmentId], references: [id])
+  quantity    Int       @default(1)
+  createdAt   DateTime  @default(now())
+
+  @@id([meetingId, equipmentId])
+}

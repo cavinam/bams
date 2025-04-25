@@ -70,7 +70,6 @@ export const getMeetingById = async (
 };
 
 // Tambah meeting baru
-// Tambah meeting baru
 export const createMeeting = async (
   req: AuthRequest,
   res: Response,
@@ -93,16 +92,42 @@ export const createMeeting = async (
       startTime,
       endTime,
       request,
-      meetingRoomName,
-      departmentName,
+      meetingRoomId,
+      departmentId,
       equipmentIds,
     } = req.body;
+
+    console.log("INI NILAI REQBODY ===", req.body);
+    console.log("Nilai meetingRoomId dari req.body:", meetingRoomId); // Tambahkan ini
+    console.log("Nilai departmentId dari req.body:", departmentId);
+    console.log("Nilai startDate dari req.body:", startDate);
+    console.log("Nilai endDate dari req.body:", endDate);
+
+    if (!startDate || !endDate) {
+      res
+        .status(400)
+        .json({ message: "Tanggal mulai dan tanggal berakhir harus diisi." });
+      return;
+    }
 
     const start = new Date(startDate);
     const end = new Date(endDate);
 
+    const meetingRoomIdNumber = Number(meetingRoomId); // Konversi ke number
+    const departmentIdNumber = Number(departmentId); // Konversi ke number
+
+    if (isNaN(meetingRoomIdNumber)) {
+      res.status(400).json({ message: "ID Ruang Meeting tidak valid." });
+      return;
+    }
+
+    if (isNaN(departmentIdNumber)) {
+      res.status(400).json({ message: "ID Departemen tidak valid." });
+      return;
+    }
+
     const meetingRoom = await prisma.meetingRoom.findUnique({
-      where: { name: meetingRoomName },
+      where: { id: meetingRoomIdNumber }, // Gunakan number yang sudah dikonversi
     });
 
     if (!meetingRoom) {
@@ -111,7 +136,7 @@ export const createMeeting = async (
     }
 
     const department = await prisma.department.findUnique({
-      where: { name: departmentName },
+      where: { id: departmentIdNumber }, // Gunakan number yang sudah dikonversi
     });
 
     if (!department) {
